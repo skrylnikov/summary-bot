@@ -41,8 +41,6 @@ bot.on("::url", async (ctx) => {
 
     await ctx.replyWithChatAction("typing");
 
-    console.log(urlList);
-
     const request = await fetch(endpoint, {
       method: "POST",
       headers: {
