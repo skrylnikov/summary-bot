@@ -2,6 +2,7 @@ services:
   summary-bot:
     build: .
     container_name: summary-bot
+    restart: always
     depends_on:
       - summary-db
 
