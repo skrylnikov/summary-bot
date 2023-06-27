@@ -156,4 +156,6 @@ bot.catch((err) => {
   }
 });
 
-bot.start();
+bot.start({
+  drop_pending_updates: true,
+});
