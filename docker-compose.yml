@@ -10,8 +10,6 @@ services:
     image: postgres:15-alpine
     command: ["postgres", "-c", "config_file=/etc/postgresql.conf"]
     restart: always
-    ports:
-      - 5432:5432
     environment:
       - POSTGRES_PASSWORD=pass
     volumes:
