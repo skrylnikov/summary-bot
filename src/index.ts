@@ -4,6 +4,7 @@ import { URL } from "node:url";
 import { config } from "dotenv";
 import { Bot } from "grammy";
 import { fetch } from "undici";
+import { PrismaClient } from "@prisma/client";
 
 config();
 
@@ -11,9 +12,22 @@ const bot = new Bot(env.TG_TOKEN!);
 
 const endpoint = "https://300.ya.ru/api/sharing-url";
 
+const prisma = new PrismaClient();
+
 bot.command(["start", "help"], (ctx) => {
   ctx.reply(`Бот для краткого пересказа статей. Работает на основе YandexGPT.
 Просто отправь ссылку на статью и получи краткий пересказ.`);
+});
+
+bot.command("stats", async (ctx) => {
+  const links = await prisma.link.findMany();
+  const users = await prisma.user.findMany();
+
+  ctx.reply(
+    `Всего ссылок: ${links.length}
+Всего пользователей: ${users.length}
+Авторизованных пользователей: ${users.filter((x) => x.autorized).length}`
+  );
 });
 
 bot.on("::url", async (ctx) => {
@@ -44,24 +58,66 @@ bot.on("::url", async (ctx) => {
       return;
     }
 
+    console.log(
+      `Got url: ${firstUrl.href}, chat: ${ctx.message?.chat?.id}, user: ${ctx.from?.id} ${ctx.from?.username}`
+    );
+
     await ctx.replyWithChatAction("typing");
 
-    const request = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "OAuth " + env.YA_TOKEN,
-      },
-      body: JSON.stringify({
-        article_url: firstUrl.href,
+    const [request, link] = await Promise.all([
+      fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "OAuth " + env.YA_TOKEN,
+        },
+        body: JSON.stringify({
+          article_url: firstUrl.href,
+        }),
       }),
-    });
+      prisma.link.create({
+        data: {
+          link: firstUrl.href,
+          userId: ctx.from?.id?.toString()!,
+          chatId: ctx.message?.chat?.id?.toString()!,
+        },
+      }),
+      prisma.user.upsert({
+        where: {
+          id: ctx.from?.id?.toString(),
+        },
+        create: {
+          id: ctx.from?.id?.toString()!,
+          username: ctx.from?.username,
+          firstName: ctx.from?.first_name,
+          lastName: ctx.from?.last_name,
+          autorized: ctx.from?.id === ctx.message?.chat?.id,
+        },
+        update: {
+          username: ctx.from?.username,
+          firstName: ctx.from?.first_name,
+          lastName: ctx.from?.last_name,
+          ...(ctx.from?.id === ctx.message?.chat?.id
+            ? { autorized: true }
+            : {}),
+        },
+      }),
+    ]);
 
     const response = (await request.json()) as any;
 
     if (response.status !== "success") {
       return;
     }
+
+    await prisma.link.update({
+      where: {
+        id: link.id,
+      },
+      data: {
+        success: true,
+      },
+    });
 
     const htmlRequest = await fetch(response.sharing_url);
 

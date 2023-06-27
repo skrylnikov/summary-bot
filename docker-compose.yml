@@ -1,3 +1,22 @@
 services:
   summary-bot:
     build: .
+    container_name: summary-bot
+    depends_on:
+      - summary-db
+
+  summary-db:
+    container_name: summary-db
+    image: postgres:15-alpine
+    command: ["postgres", "-c", "config_file=/etc/postgresql.conf"]
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=pass
+    volumes:
+      - summary-db:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/etc/postgresql.conf
+
+volumes:
+  summary-db: {}

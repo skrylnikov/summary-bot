@@ -9,4 +9,4 @@ RUN npm install
 COPY . .
 
 # Запускаем приложение через npm
-CMD ["npm", "start"]
+CMD ["sh", "startup.sh"]

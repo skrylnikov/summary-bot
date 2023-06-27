@@ -7,6 +7,8 @@
   "scripts": {
     "start": "tsx ./src/index",
     "dev": "tsx  --watch ./src/index",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate deploy",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -21,10 +23,12 @@
   "homepage": "https://github.com/skrylnikov/summary-bot#readme",
   "devDependencies": {
     "@types/node": "^18.16.18",
+    "prisma": "^4.16.1",
     "tsx": "^3.12.7",
     "typescript": "^5.1.3"
   },
   "dependencies": {
+    "@prisma/client": "^4.16.1",
     "dotenv": "^16.3.1",
     "grammy": "^1.17.1",
     "undici": "^5.22.1"
