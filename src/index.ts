@@ -11,6 +11,11 @@ const bot = new Bot(env.TG_TOKEN!);
 
 const endpoint = "https://300.ya.ru/api/sharing-url";
 
+bot.command(["start", "help"], (ctx) => {
+  ctx.reply(`Бот для краткого пересказа статей. Работает на основе YandexGPT.
+Просто отправь ссылку на статью и получи краткий пересказ.`);
+});
+
 bot.on("::url", async (ctx) => {
   try {
     const entitiesUrlList =
