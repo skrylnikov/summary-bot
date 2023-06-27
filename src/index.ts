@@ -2,7 +2,7 @@ import { env } from "node:process";
 import { URL } from "node:url";
 
 import { config } from "dotenv";
-import { Bot } from "grammy";
+import { Bot, GrammyError, HttpError } from "grammy";
 import { fetch } from "undici";
 import { PrismaClient } from "@prisma/client";
 
@@ -15,7 +15,7 @@ const endpoint = "https://300.ya.ru/api/sharing-url";
 const prisma = new PrismaClient();
 
 bot.command(["start", "help"], (ctx) => {
-  ctx.reply(`Бот для краткого пересказа статей. Работает на основе YandexGPT.
+  return ctx.reply(`Бот для краткого пересказа статей. Работает на основе YandexGPT.
 Просто отправь ссылку на статью и получи краткий пересказ.`);
 });
 
@@ -23,7 +23,7 @@ bot.command("stats", async (ctx) => {
   const links = await prisma.link.findMany();
   const users = await prisma.user.findMany();
 
-  ctx.reply(
+  await ctx.reply(
     `Всего ссылок: ${links.length}
 Всего пользователей: ${users.length}
 Авторизованных пользователей: ${users.filter((x) => x.autorized).length}`
@@ -131,7 +131,7 @@ bot.on("::url", async (ctx) => {
 
     const json = JSON.parse(JSON.parse(data!).body);
 
-    ctx.reply(
+    await ctx.reply(
       "<b>Краткий пересказ: " +
         json.title +
         "</b>\n\n" +
@@ -140,6 +140,19 @@ bot.on("::url", async (ctx) => {
     );
   } catch (e) {
     console.error(e);
+  }
+});
+
+bot.catch((err) => {
+  const ctx = err.ctx;
+  console.error(`Error while handling update ${ctx.update.update_id}:`);
+  const e = err.error;
+  if (e instanceof GrammyError) {
+    console.error("Error in request:", e.description);
+  } else if (e instanceof HttpError) {
+    console.error("Could not contact Telegram:", e);
+  } else {
+    console.error("Unknown error:", e);
   }
 });
 
